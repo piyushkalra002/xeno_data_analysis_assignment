@@ -1,37 +1,28 @@
 -- target_base for merchant 501, October 2026
-
-with recursive campaign_chain as (
-
-    select
-        id as campaign_id,
-        id as root_id
+-- Expected outcome = 22
+with recursive chain as (
+    select id as campaign_id, id as root_id
     from campaign
     where merchant_id = 501
       and parent_id is null
-
-    union all
-
-    select
-        c.id,
-        cc.root_id
+    union alL
+    select c.id, ch.root_id
     from campaign c
-    join campaign_chain cc
-        on c.parent_id = cc.campaign_id
-    where c.merchant_id = 501
+    join chain ch
+      on c.parent_id = ch.campaign_id
 ),
 
-eligible_sends as (
-
+eligible as (
     select
-        cl.id as send_id,
+        cl.id,
         cl.customer_id,
-        cc.root_id,
-        cc.campaign_id
+        ch.root_id,
+        ch.campaign_id
     from communication_log cl
     join campaign c
-        on cl.communication_id = c.id
-    join campaign_chain cc
-        on c.id = cc.campaign_id
+      on cl.communication_id = c.id
+    join chain ch
+      on cl.communication_id = ch.campaign_id
     where cl.merchant_id = 501
       and cl.communication_type = '2'
       and cl.sent_time >= '2026-10-01'
@@ -40,29 +31,25 @@ eligible_sends as (
       and c.processing_status = 'processed'
 ),
 
-family_type as (
-
+retry_check as (
     select
         root_id,
-        max(case when campaign_id <> root_id then 1 else 0 end) as has_retry
-    from campaign_chain
+        max(case when campaign_id != root_id then 1 else 0 end) as has_retry
+    from chain
     group by root_id
 ),
 
-family_counts as (
-
+final_count as (
     select
-        es.root_id,
+        e.root_id,
         case
-            when ft.has_retry = 1
-                then count(distinct es.customer_id)
-            else count(es.send_id)
+            when r.has_retry = 1 then count(distinct e.customer_id)
+            else count(e.id)
         end as target_base
-    from eligible_sends es
-    join family_type ft
-        on es.root_id = ft.root_id
-    group by es.root_id, ft.has_retry
+    from eligible e
+    join retry_check r
+      on e.root_id = r.root_id
+    group by e.root_id, r.has_retry
 )
-
 select sum(target_base) as target_base
-from family_counts;
+from final_count;
