@@ -4,40 +4,41 @@
 
 Finance reported a `target_base` of 22 for merchant 501 in October 2026.
 
-I started with the raw communication log and worked through the campaign statuses and retry relationships to reconcile the number.
+I started with the communication log and worked through the customer repeats, campaign relationships and campaign status to understand the difference.
 
 ### Reconciliation Bridge
 
-| Step | Description | Result | Reason |
-|---|---|---:|---|
+| Step | What I checked | Result | Reason |
+|---:|---|---:|---|
 | 0 | Raw communication log count | 30 | Starting point |
-| 1 | Exclude campaign 9004 | 26 | Campaign was still `approval_awaiting` and was not included in official reporting |
-| 2 | 9001 → 9002 → 9003 | 23 | 3 sends were additional attempts for customers already in the retry chain |
-| 3 | 9201 → 9202 | 22 | 1 send was an additional retry attempt |
+| 1 | Distinct customers | 25 | This did not match Finance's 22, so I looked further into the repeated customers |
+| 2 | Exclude campaign 9004 | 26 | 9004 was still `approval_awaiting`, so its 4 records were not included in reporting |
+| 3 | Adjust 9001 → 9002 → 9003 | 23 | 3 records were additional attempts for customers already in the retry chain |
+| 4 | Adjust 9201 → 9202 | 22 | 1 record was an additional retry attempt |
 | Final | `target_base` | **22** | Matches Finance's number |
 
-### My Approach
+### Approach
 
-I started by counting all the records in `communication_log`, which gave 30. I then checked the number of unique customers, which gave 25, so simply counting unique customers was not enough to match Finance's target_base of 22.
+I first checked the basic time period of the data and the values present in the delivery status field. I then counted the communication log records and got 30.
 
-I looked at the customers who appeared more than once and checked which campaigns those records belonged to. This led me to the `parent_id` field in the campaign table, which showed that 9001 - 9002 - 9003 and 9201 - 9202 were retry chains. For these chains, repeated attempts for the same customer should only count once.
+As a simple check, I counted distinct customers and got 25. Since this still did not match Finance's number, I looked at which customers were repeated and where those sends came from.
 
-I also checked campaign 9101 separately because C20 appeared twice there. Since 9101 is a standalone campaign(that i rechecked from the readme.me provided to us) and not part of a retry chain, both sends to C20 were kept.
+Some repeated customers appeared across different campaign IDs. Checking `parent_id` showed that 9001 → 9002 → 9003 and 9201 → 9202 were retry chains. I checked the sends in these chains and found that some customers were being sent to again after an earlier attempt.
 
-After that, I checked the campaign status fields and found that campaign 9004 was still `approval_awaiting`. The data dictionary says campaigns in this state are not included in official reporting, and 9004 had 4 communication records, so those records were excluded.
+I also checked campaign 9101 separately because C20 appeared twice there. Since 9101 is a standalone campaign, both sends to C20 were kept as separate events.
 
-This gave the final reconciliation: 30 raw records → 26 after excluding 9004 → 23 after adjusting the first retry chain → 22 after adjusting the second retry chain.
+I then checked the campaign statuses and found that 9004 was still `approval_awaiting`. It had 4 communication records, but campaigns in this state are not included in official reporting, so these were excluded.
 
-I then checked the campaign statuses and found that campaign 9004 was still `approval_awaiting`. Its 4 communication records were therefore excluded from the reporting count.
+This gave the final reconciliation of 30 → 26 → 23 → 22.
 
 ### SQL
 
 The final SQL query is available in [`Sql_Queries.sql`](Sql_Queries.sql).
 
-Running it against the provided SQLite database gives:
+Running it against the provided database returns:
 
 `target_base = 22`
 
 ### One thing I noticed
 
-One thing that stood out was that campaign 9004 already had communication log records even though it was still awaiting approval. I also found that repeated customers cannot always be treated as duplicates, since C20 was sent twice in the standalone campaign 9101.
+The main thing that stood out to me was that repeated send records do not always mean duplicate data. In the retry chains, the same customer can appear multiple times because the message was retried, while in the standalone campaign 9101, C20 was sent twice on different dates and both sends are valid. This means that simply counting distinct customers would undercount the target_base, while counting every send would overcount it.
