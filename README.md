@@ -23,6 +23,8 @@ I started with the communication log and worked through the customer repeats, ca
 | 10 | Adjust 9201 → 9202 | 22 | Subtracting the 1 additional retry attempt |
 | **Final** | **Target base** | **22** | **Matches Finance's reported number** |
 
+#### PLEASE CHECK THE `Analysis.ipynb` TO SEE MY EXACT WORKING ON THE DATA!!!
+
 ### Approach
 
 I first checked the basic time period of the data and the values present in the delivery status field. I then counted the communication log records and got 30.
