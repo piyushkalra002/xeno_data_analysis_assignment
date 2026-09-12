@@ -8,7 +8,7 @@ I started with the communication log and worked through the customer repeats, ca
 
 ### Reconciliation Bridge
 
-|| Step | Description | Result | Reason |
+| Step | Description | Result | Reason |
 |---|---|---:|---|
 | 0 | Raw communication log count | 30 | Starting point |
 | 1 | Count distinct customers | 25 | This did not match Finance's 22, so I looked further into the repeated customers |
