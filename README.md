@@ -17,7 +17,7 @@ I started with the communication log and worked through the customer repeats, ca
 | 4 | Check 9001 → 9002 → 9003 | 13 sends / 10 customers | 3 sends were additional attempts for customers already in the chain |
 | 5 | Check 9201 → 9202 | 6 sends / 5 customers | 1 send was an additional retry attempt |
 | 6 | Check standalone campaign 9101 | 7 sends / 6 customers | C20 was sent twice, but both sends were kept because 9101 is standalone |
-| 7 | Check campaign statuses | 9004 = `approval_awaiting` | The data dictionary says campaigns still awaiting approval are not included in reporting |
+| 7 | Check campaign statuses | 9004 = `approval_awaiting` | The Readme provided by xeno says campaigns still awaiting approval are not included in reporting |
 | 8 | Exclude campaign 9004 | 26 | 9004 had 4 communication records that were not reportable |
 | 9 | Adjust 9001 → 9002 → 9003 | 23 | Subtracting the 3 additional retry attempts |
 | 10 | Adjust 9201 → 9202 | 22 | Subtracting the 1 additional retry attempt |
