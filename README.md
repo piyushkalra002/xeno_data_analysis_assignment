@@ -8,14 +8,20 @@ I started with the communication log and worked through the customer repeats, ca
 
 ### Reconciliation Bridge
 
-| Step | What I checked | Result | Reason |
-|---:|---|---:|---|
+|| Step | Description | Result | Reason |
+|---|---|---:|---|
 | 0 | Raw communication log count | 30 | Starting point |
-| 1 | Distinct customers | 25 | This did not match Finance's 22, so I looked further into the repeated customers |
-| 2 | Exclude campaign 9004 | 26 | 9004 was still `approval_awaiting`, so its 4 records were not included in reporting |
-| 3 | Adjust 9001 → 9002 → 9003 | 23 | 3 records were additional attempts for customers already in the retry chain |
-| 4 | Adjust 9201 → 9202 | 22 | 1 record was an additional retry attempt |
-| Final | `target_base` | **22** | Matches Finance's number |
+| 1 | Count distinct customers | 25 | This did not match Finance's 22, so I looked further into the repeated customers |
+| 2 | Check repeated customers | C2, C3, C20 and D1 | These customers had more than one send, so I checked why they were repeated |
+| 3 | Check campaign relationships | 9001 → 9002 → 9003 and 9201 → 9202 | The `parent_id` values showed that these were retry chains |
+| 4 | Check 9001 → 9002 → 9003 | 13 sends / 10 customers | 3 sends were additional attempts for customers already in the chain |
+| 5 | Check 9201 → 9202 | 6 sends / 5 customers | 1 send was an additional retry attempt |
+| 6 | Check standalone campaign 9101 | 7 sends / 6 customers | C20 was sent twice, but both sends were kept because 9101 is standalone |
+| 7 | Check campaign statuses | 9004 = `approval_awaiting` | The data dictionary says campaigns still awaiting approval are not included in reporting |
+| 8 | Exclude campaign 9004 | 26 | 9004 had 4 communication records that were not reportable |
+| 9 | Adjust 9001 → 9002 → 9003 | 23 | Subtracting the 3 additional retry attempts |
+| 10 | Adjust 9201 → 9202 | 22 | Subtracting the 1 additional retry attempt |
+| **Final** | **Target base** | **22** | **Matches Finance's reported number** |
 
 ### Approach
 
